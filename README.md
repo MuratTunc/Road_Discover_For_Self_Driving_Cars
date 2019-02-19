@@ -4,6 +4,8 @@ This project is a good challenge and share many useful sw skills with other frie
 
 It is just beginnig, it is not working correctly.
 
+The video part.
+
 Best Rgerads.
 
 Murat Tunç
