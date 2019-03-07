@@ -6,6 +6,6 @@ It is just beginnig, it is not working correctly.
 
 The video part.
 
-Best Rgerads.
+Best Regards.
 
 Murat Tunç
