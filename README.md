@@ -2,7 +2,7 @@
 
 1-INSTALL OPENCV 4.2.0 TO UBUNTU 18.04
 
--Run script install_opencv.sh (I get this script from https://github.com/AmitThakur/opencvp)
+-Run script install_opencv.sh (I get this script from https://github.com/milq/milq/blob/master/scripts/bash/install-opencv.sh)
 -cd /etc/
 -sudo nano ld.so.conf
 -add #include /usr/local/lib
