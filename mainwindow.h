@@ -30,9 +30,6 @@ public:
     void Calibrate();
 
 
-
-
-
 private slots:
 
     
@@ -57,6 +54,10 @@ private:
     vector<vector<Point2f> > imagePoints;     // output Matrices
     Mat cameraMatrix;
     Mat distCoeffs;
+    Mat map1,map2;
+    Size imageSize;
+    Size outputSize;
+    Mat undistorted;
 };
 
 #endif // MAINWINDOW_H
