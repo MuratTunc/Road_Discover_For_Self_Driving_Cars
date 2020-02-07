@@ -24,9 +24,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     Calibrate();
    // Birds_Eye_View();
     //Detect_Lane();
-
-
-
     //ui->image_lbl->setPixmap(QPixmap::fromImage(QImage(img_HSV.data, img_HSV.cols, img_HSV.rows, img_HSV.step, QImage::Format_RGB444)));
 
 }
@@ -39,11 +36,14 @@ void MainWindow::Initialize()
 {
     namedWindow("T1");
     //*********************************************************//
-    img_BGR=imread("Road_Snap5.png");
+    img_BGR=imread("Road_Snap1.png");
     cvtColor(img_BGR, img_RGB,COLOR_BGR2RGB); //convert to RGB
+    imshow("img_RGB",img_RGB);
 
-    imgWidth=img_BGR.cols;
-    imgHeight=img_BGR.rows;
+    imgWidth=img_RGB.cols;
+    imgHeight=img_RGB.rows;
+    imageSize=img_RGB.size();
+    outputSize=img_RGB.size();
 
 }
 void MainWindow::Calibrate(){
@@ -61,6 +61,8 @@ void MainWindow::Calibrate(){
 
     }
 
+
+    //2-1********************************************************************************************//
     Size boardSize(9,6);
     // the points on the chessboard
     vector<Point2f> imageCorners;
@@ -82,11 +84,7 @@ void MainWindow::Calibrate(){
     int successes = 0;
     // for all viewpoints
     for (int i=0; i<filelist.size(); i++) {
-
-        // Open the image
         image = imread(filelist[i],0);
-
-        // Get the chessboard corners
         bool found = findChessboardCorners(image,         // image of chessboard pattern
                                                boardSize,     // size of pattern
                                                imageCorners); // list of detected corners
@@ -101,6 +99,8 @@ void MainWindow::Calibrate(){
                                               30,		// max number of iterations
                                               0.1));  // min accuracy
 
+
+            //2-2****************************************************************************************//
             // If we have a good board, add it to our data
             if (imageCorners.size() == boardSize.area()) {
                 imagePoints.push_back(imageCorners);     // 2D image points from one view
@@ -109,14 +109,57 @@ void MainWindow::Calibrate(){
             }
         }
 
-        if (windowName.length()>0 && imageCorners.size() == boardSize.area()) {
+//        if (windowName.length()>0 && imageCorners.size() == boardSize.area()) {
 
-            //Draw the corners
-            cv::drawChessboardCorners(image, boardSize, imageCorners, found);
-            cv::imshow(windowName, image);
-            cv::waitKey(3000);
-        }
+//            //Draw the corners
+//            cv::drawChessboardCorners(image, boardSize, imageCorners, found);
+//            cv::imshow(windowName, image);
+//            cv::waitKey(3000);
+//        }
     }
+
+
+    //2-3********************************************************************************************//
+    // Set the calibration options
+    // 8radialCoeffEnabled should be true if 8 radial coefficients are required (5 is default)
+    // tangentialParamEnabled should be true if tangeantial distortion is present
+    bool radial8CoeffEnabled=true;
+    bool tangentialParamEnabled=true;
+    // Set the flag used in cv::calibrateCamera()
+    bool flag = 0;
+    if (!tangentialParamEnabled)
+        flag += cv::CALIB_ZERO_TANGENT_DIST;
+    if (radial8CoeffEnabled)
+        flag += cv::CALIB_RATIONAL_MODEL;
+
+
+
+
+    //Output rotations and translations
+    vector<Mat> rvecs, tvecs;
+
+    calibrateCamera(objectPoints, // the 3D points
+                   imagePoints,  // the image points
+                   imageSize,    // image size
+                   cameraMatrix, // output camera matrix
+                   distCoeffs,   // output distortion matrix
+                   rvecs, tvecs, // Rs, Ts
+                   flag);        // set options
+
+
+    initUndistortRectifyMap(
+                cameraMatrix,  // computed camera matrix
+                distCoeffs,    // computed distortion matrix
+                cv::Mat(),     // optional rectification (none)
+                cv::Mat(),     // camera matrix to generate undistorted
+                outputSize,    // size of undistorted
+                CV_32FC1,      // type of output map
+                map1, map2);   // the x and y mapping functions
+    // Apply mapping functions
+    remap(img_RGB, undistorted, map1, map2,
+        cv::INTER_LINEAR); // interpolation type
+    imshow("undistorted", undistorted);
+
 
 
 }
