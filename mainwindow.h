@@ -28,6 +28,7 @@ public:
     void Initialize();
     void Detect_Lane();
     void Calibrate();
+    void Binary_Threshold();
 
 
 private slots:
@@ -39,6 +40,7 @@ private:
     Mat img_RGB;
     Mat img_GRAY;
     Mat img_HSV;
+    Mat img_HSL;
     Mat img_dst;
     Mat img_cdst;
     Mat img_cdstP;
@@ -58,6 +60,8 @@ private:
     Size imageSize;
     Size outputSize;
     Mat undistorted;
+    Mat perspectiveMatrix;
+    Mat invertedPerspectiveMatrix;
 };
 
 #endif // MAINWINDOW_H

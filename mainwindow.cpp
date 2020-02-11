@@ -1,4 +1,4 @@
-﻿#include <opencv4/opencv2/core/core.hpp>
+#include <opencv4/opencv2/core/core.hpp>
 #include <opencv4/opencv2/highgui/highgui.hpp>
 #include <opencv4/opencv2/opencv.hpp>
 #include <opencv4/opencv2/imgcodecs/imgcodecs.hpp>
@@ -20,9 +20,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
 
 
-    Initialize();
-    Calibrate();
-   // Birds_Eye_View();
+    Initialize();        //get image size
+    Calibrate();         //get cameramatrix
+    Birds_Eye_View();    //get perspectivematrix
+    Binary_Threshold();
     //Detect_Lane();
     //ui->image_lbl->setPixmap(QPixmap::fromImage(QImage(img_HSV.data, img_HSV.cols, img_HSV.rows, img_HSV.step, QImage::Format_RGB444)));
 
@@ -36,14 +37,15 @@ void MainWindow::Initialize()
 {
     namedWindow("T1");
     //*********************************************************//
-    img_BGR=imread("Road_Snap1.png");
-    cvtColor(img_BGR, img_RGB,COLOR_BGR2RGB); //convert to RGB
-    imshow("img_RGB",img_RGB);
+    img_BGR=imread("test_images/test5.jpg");
+    //img_BGR=imread("WEBCAM.jpg");
+    imshow("img_BGR",img_BGR);
 
-    imgWidth=img_RGB.cols;
-    imgHeight=img_RGB.rows;
-    imageSize=img_RGB.size();
-    outputSize=img_RGB.size();
+    imgWidth=img_BGR.cols;
+    imgHeight=img_BGR.rows;
+    imageSize=img_BGR.size();
+    outputSize=img_BGR.size();
+    cout <<"imgWidth="<<imgWidth <<endl<<"imgHeight=" <<imgHeight<<endl;
 
 }
 void MainWindow::Calibrate(){
@@ -60,7 +62,6 @@ void MainWindow::Calibrate(){
         filelist.push_back(str.str());
 
     }
-
 
     //2-1********************************************************************************************//
     Size boardSize(9,6);
@@ -123,16 +124,15 @@ void MainWindow::Calibrate(){
     // Set the calibration options
     // 8radialCoeffEnabled should be true if 8 radial coefficients are required (5 is default)
     // tangentialParamEnabled should be true if tangeantial distortion is present
-    bool radial8CoeffEnabled=true;
+
     bool tangentialParamEnabled=true;
+    bool radial8CoeffEnabled=false;
     // Set the flag used in cv::calibrateCamera()
     bool flag = 0;
     if (!tangentialParamEnabled)
         flag += cv::CALIB_ZERO_TANGENT_DIST;
     if (radial8CoeffEnabled)
         flag += cv::CALIB_RATIONAL_MODEL;
-
-
 
 
     //Output rotations and translations
@@ -146,6 +146,10 @@ void MainWindow::Calibrate(){
                    rvecs, tvecs, // Rs, Ts
                    flag);        // set options
 
+//    std::cout << " Camera intrinsic: " << cameraMatrix.rows << "x" << cameraMatrix.cols << std::endl;
+//    std::cout << cameraMatrix.at<double>(0,0) << " " << cameraMatrix.at<double>(0,1) << " " << cameraMatrix.at<double>(0,2) << std::endl;
+//    std::cout << cameraMatrix.at<double>(1,0) << " " << cameraMatrix.at<double>(1,1) << " " << cameraMatrix.at<double>(1,2) << std::endl;
+//    std::cout << cameraMatrix.at<double>(2,0) << " " << cameraMatrix.at<double>(2,1) << " " << cameraMatrix.at<double>(2,2) << std::endl;
 
     initUndistortRectifyMap(
                 cameraMatrix,  // computed camera matrix
@@ -156,79 +160,23 @@ void MainWindow::Calibrate(){
                 CV_32FC1,      // type of output map
                 map1, map2);   // the x and y mapping functions
     // Apply mapping functions
-    remap(img_RGB, undistorted, map1, map2,
-        cv::INTER_LINEAR); // interpolation type
-    imshow("undistorted", undistorted);
-
-
+    remap(img_BGR, undistorted, map1, map2, INTER_LINEAR); // interpolation type
 
 }
-
-
-
-void MainWindow::Detect_Lane()
-{
-
-        //3-1-Binary Convertion
-        //Declare the output variables
-        Mat dst, cdst, cdstP;
-        Mat src= img_Wrap.clone();
-
-        cvtColor(img_Wrap,dst,COLOR_RGB2GRAY); //convert to GRAYSCALE
-        cvtColor(img_Wrap,cdstP,COLOR_RGB2GRAY); //convert to GRAYSCALE
-        // Edge detection
-        qint16 Threshold_1=50;
-        qint16 Threshold_2=220;
-        Canny(src, dst, Threshold_1, Threshold_2, 3);
-        imshow("Canny", dst);
-
-//        // Standard Hough Line Transform
-//        vector<Vec2f> lines; // will hold the results of the detection
-//        HoughLines(dst, lines, 1, CV_PI/180, 250, 0, 0 ); // runs the actual detection
-//        // Draw the lines
-//        for( size_t i = 0; i < lines.size(); i++ )
-//        {
-//            float rho = lines[i][0], theta = lines[i][1];
-//            Point pt1, pt2;
-//            double a = cos(theta), b = sin(theta);
-//            double x0 = a*rho, y0 = b*rho;
-//            pt1.x = cvRound(x0 + 1000*(-b));
-//            pt1.y = cvRound(y0 + 1000*(a));
-//            pt2.x = cvRound(x0 - 1000*(-b));
-//            pt2.y = cvRound(y0 - 1000*(a));
-//            line( dst, pt1, pt2, Scalar(0,0,255), 3, LINE_AA);
-//        }
-//        imshow("Hough Transform", dst);
-
-
-        Mat maskWhite;
-        qint16 Threshold=200;
-        inRange(img_Wrap, Scalar(Threshold, Threshold, Threshold), Scalar(255, 255, 255), maskWhite);
-        imshow("maskWhite", maskWhite);
-
-
-
-
-
-
-
-}
-
-
 void MainWindow::Birds_Eye_View()
 {
     //2-1-Define Source & Destination Points
 
-    qint16 X_Top_Left=590;
-    qint16 Y_Top_Left=450;
+    qint16 X_Top_Left=530;
+    qint16 Y_Top_Left=440;
 
-    qint16 X_Top_Right=690;
-    qint16 Y_Top_Right=450;
+    qint16 X_Top_Right=720;
+    qint16 Y_Top_Right=440;
 
     qint16 X_Bottom_Right=1060;
     qint16 Y_Bottom_Right=650;
 
-    qint16 X_Bottom_Left=300;
+    qint16 X_Bottom_Left=180;
     qint16 Y_Bottom_Left=650;
 
     qint16 Dst_diff=20;
@@ -258,30 +206,63 @@ void MainWindow::Birds_Eye_View()
 
     PT4.x=X_Bottom_Left;
     PT4.y=Y_Bottom_Left;
+    Scalar Color( 0, 0, 255 );
 
-    //2-2-Draw Rectangle
-    line(img_BGR,PT1,PT2,Scalar( 255, 0, 0 ),1,LINE_8,0);
-    line(img_BGR,PT2,PT3,Scalar( 255, 0, 0 ),1,LINE_8,0);
-    line(img_BGR,PT3,PT4,Scalar( 255, 0, 0 ),1,LINE_8,0);
-    line(img_BGR,PT4,PT1,Scalar( 255, 0, 0 ),1,LINE_8,0);
+//    //2-2-Draw Rectangle
+//    line(undistorted,PT1,PT2,Color,2,LINE_8,0);
+//    line(undistorted,PT2,PT3,Color,2,LINE_8,0);
+//    line(undistorted,PT3,PT4,Color,2,LINE_8,0);
+//    line(undistorted,PT4,PT1,Color,2,LINE_8,0);
 
-    imshow("Original Image", img_BGR);
+    //imshow("undistorted",undistorted);
+
     //**********************************************************//
 
     //2-3-Warp Perspective Image
     //Prepare the matrix for transform and get the warped image.
 
-    Mat perspectiveMatrix=getPerspectiveTransform(src,dst);
-    img_Wrap=Mat(480, 640, CV_8UC3); //Destination for warped image
-    Mat invertedPerspectiveMatrix;
+    perspectiveMatrix=getPerspectiveTransform(src,dst);
     invert(perspectiveMatrix, invertedPerspectiveMatrix);
-    warpPerspective(img_RGB, img_Wrap, perspectiveMatrix, img_Wrap.size(), INTER_LINEAR, BORDER_CONSTANT);
+    warpPerspective(undistorted, img_Wrap, perspectiveMatrix, imageSize, INTER_LINEAR, BORDER_CONSTANT);
+}
 
-    imshow("warpPerspective",img_Wrap);
+void MainWindow::Binary_Threshold()
+{
+
+
+    //HSL color transform
+    cvtColor(img_Wrap, img_HSL, COLOR_BGR2HLS);
+    imshow("img_HSL", img_HSL);
+
+
 
 
 
 }
+
+void MainWindow::Detect_Lane()
+{
+     //Gray Scale
+    cvtColor(img_BGR,img_GRAY,COLOR_BGR2GRAY);
+    imshow("img_GRAY",img_GRAY);
+
+    //Blur image
+    Mat Gaussian_Blur;
+    GaussianBlur( img_GRAY, Gaussian_Blur, Size( 5, 5 ), 2, 2 );
+    imshow("Gaussian_Blur",Gaussian_Blur);
+
+    //Canny (Edge Detection)
+    Mat Canny_Image;
+    const int lowThreshold = 0;
+    const int highThreshold = 100;
+    const int kernel_size = 3;
+    Canny( Gaussian_Blur, Canny_Image, lowThreshold, highThreshold, kernel_size );
+    imshow("Canny_Image",Canny_Image);
+
+}
+
+
+
 void MainWindow::HSV_Threshold()
 {
     //medianBlur(img_BGR, img_BGR, 3);
