@@ -22,8 +22,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     Initialize();        //get image size
     Calibrate();         //get cameramatrix
-    Birds_Eye_View();    //get perspectivematrix
+
     Binary_Threshold();
+    Birds_Eye_View();    //get perspectivematrix
+
     //Detect_Lane();
     //ui->image_lbl->setPixmap(QPixmap::fromImage(QImage(img_HSV.data, img_HSV.cols, img_HSV.rows, img_HSV.step, QImage::Format_RGB444)));
 
@@ -37,7 +39,7 @@ void MainWindow::Initialize()
 {
     namedWindow("T1");
     //*********************************************************//
-    img_BGR=imread("test_images/test5.jpg");
+    img_BGR=imread("test_images/test4.jpg");
     //img_BGR=imread("WEBCAM.jpg");
     imshow("img_BGR",img_BGR);
 
@@ -160,7 +162,9 @@ void MainWindow::Calibrate(){
                 CV_32FC1,      // type of output map
                 map1, map2);   // the x and y mapping functions
     // Apply mapping functions
-    remap(img_BGR, undistorted, map1, map2, INTER_LINEAR); // interpolation type
+    remap(img_BGR, img_undistorted, map1, map2, INTER_LINEAR); // interpolation type
+    //imshow("undistorted",img_undistorted);
+
 
 }
 void MainWindow::Birds_Eye_View()
@@ -223,19 +227,32 @@ void MainWindow::Birds_Eye_View()
 
     perspectiveMatrix=getPerspectiveTransform(src,dst);
     invert(perspectiveMatrix, invertedPerspectiveMatrix);
-    warpPerspective(undistorted, img_Wrap, perspectiveMatrix, imageSize, INTER_LINEAR, BORDER_CONSTANT);
+    warpPerspective(img_Binary, img_Wrap, perspectiveMatrix, imageSize, INTER_LINEAR, BORDER_CONSTANT);
+    imshow("img_Wrap", img_Wrap);
+
 }
 
 void MainWindow::Binary_Threshold()
 {
 
+    cvtColor(img_undistorted, img_HSL, COLOR_BGR2HLS);
+    //imshow("img_HSL", img_HSL);
 
-    //HSL color transform
-    cvtColor(img_Wrap, img_HSL, COLOR_BGR2HLS);
-    imshow("img_HSL", img_HSL);
+    // Detect the object based on YELLOW filler on HSV Wrap image
+    Scalar Yellow_Low(10,100,100);
+    Scalar Yellow_High(100,255,255);
+    inRange(img_HSL, Yellow_Low, Yellow_High, img_Yellow_Filtered);
+    //imshow("Yellow Filter", img_Yellow_Filtered);
 
 
+    // Detect the object based on YELLOW filler on HSV Wrap image
+    Scalar White_Low(200,200,200);
+    Scalar White_High(255,255,255);
+    inRange(img_undistorted, White_Low, White_High, img_White_Filtered);
+    //imshow("White Filter", img_White_Filtered);
 
+    bitwise_or(img_Yellow_Filtered,img_White_Filtered,img_Binary);
+    imshow("img_Binary", img_Binary);
 
 
 }
@@ -263,44 +280,13 @@ void MainWindow::Detect_Lane()
 
 
 
-void MainWindow::HSV_Threshold()
-{
-    //medianBlur(img_BGR, img_BGR, 3);
-    // Threshold the HSV image, keep only the red pixels
-
-    inRange(img_HSV, Scalar(10, 0, 10), Scalar(190, 5, 150), lower_red_hue_range);
-//    inRange(img_HSV, Scalar(0, 10, 10), Scalar(5, 255, 255), lower_red_hue_range);
-//    inRange(img_HSV, Scalar(10, 100, 100), Scalar(200, 255, 255), upper_red_hue_range);
-//    addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, red_hue_image);
-    imshow("HSV", img_HSV);
-    imshow("Lower Red", lower_red_hue_range);
-    //imshow("Upper Red", upper_red_hue_range);
-
-    //GaussianBlur(red_hue_image, red_hue_image, Size(9, 9), 2, 2);
-   //imshow("Red Hue", red_hue_image);
-
-}
-
 void MainWindow::Vertical_Lines()
 {
 
 
 
 }
-void MainWindow::Adaptive_Threshold()
-{
-    adaptiveThreshold(~img_GRAY, img_Binary, 100, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 15, -2);
-    imshow("T1", img_Binary);
 
-}
-
-void MainWindow::Threshold_RGB_White()
-{
-    qint16 Threshold=140;
-    inRange(img_RGB, Scalar(Threshold, Threshold, Threshold), Scalar(255, 255, 255), img_RGB);
-    imshow("T1", img_RGB);
-
-}
 
 void MainWindow::Hough_Transform()
 {

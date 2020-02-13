@@ -49,6 +49,8 @@ private:
     Mat upper_red_hue_range;
     Mat red_hue_image;
     Mat img_Wrap;
+    Mat img_Yellow_Filtered;
+    Mat img_White_Filtered;
     qint16 imgWidth;
     qint16 imgHeight;
 
@@ -59,7 +61,7 @@ private:
     Mat map1,map2;
     Size imageSize;
     Size outputSize;
-    Mat undistorted;
+    Mat img_undistorted;
     Mat perspectiveMatrix;
     Mat invertedPerspectiveMatrix;
 };
